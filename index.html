@@ -65,38 +65,40 @@
             font-size: 0.85rem;
             font-weight: bold;
         }
-        .note-canvas {
+        .canvas-container {
             flex: 1;
             padding: 16px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .note-canvas {
+            width: 100%;
             font-size: 1.15rem;
             line-height: 1.4;
             outline: none;
-            overflow-y: auto;
-            position: relative;
             white-space: pre-wrap;
             caret-color: var(--apple-yellow);
-        }
-        .note-canvas:empty::before {
-            content: '';
-            display: inline-block;
+            min-height: 150px;
         }
         .stealth-feed {
-            margin-top: 40px;
-            border-top: 1px solid transparent;
-            padding-top: 10px;
+            margin-top: auto;
+            padding-top: 20px;
+            padding-bottom: 20px;
             color: var(--gray-text);
-            font-size: 0.95rem;
-            letter-spacing: 0.3px;
+            font-size: 1rem;
         }
-        .match-badge {
-            display: inline-block;
-            background-color: #f2f2f7;
-            color: #555555;
-            padding: 4px 10px;
-            border-radius: 6px;
-            margin-right: 8px;
+        .feed-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             margin-bottom: 8px;
-            font-size: 0.9rem;
+            color: #c5c5c7;
+        }
+        .match-item {
+            font-size: 1.05rem;
+            color: #555555;
+            margin-bottom: 6px;
             text-transform: capitalize;
         }
         .apple-toolbar {
@@ -130,7 +132,13 @@
         </div>
     </div>
 
-    <div class="note-canvas" id="notePad" contenteditable="true" autofocus></div>
+    <div class="canvas-container">
+        <div class="note-canvas" id="notePad" contenteditable="true" autofocus></div>
+        <div class="stealth-feed" id="resultsSection" style="display:none;">
+            <div class="feed-title">Matches</div>
+            <div id="wordList"></div>
+        </div>
+    </div>
 
     <div class="apple-toolbar">
         <div class="toolbar-btn" style="font-family: serif; font-weight: bold;">Aa</div>
@@ -144,62 +152,53 @@
 <script>
 const KNOWLEDGE_BASE = {
     "animal": ["albatross", "alligator", "animal", "baboon", "barramundi", "bat", "beagle", "bear", "bison", "border collie", "brown bear", "bulldog", "camel", "canary", "cat", "chameleon", "cheetah", "chihuahua", "chimp", "chimpanzee", "chicken", "clownfish", "cocker spaniel", "crocodile", "crow", "deer", "dolphin", "dog", "donkey", "duck", "eagle", "elephant", "fish", "finch", "flamingo", "fox", "frog", "gecko", "german shepherd", "giraffe", "gibbon", "goldfish", "gorilla", "great dane", "grizzly bear", "guinea pig", "hamster", "hawk", "hedgehog", "hippo", "hippopotamus", "horse", "hummingbird", "husky", "iguana", "jellyfish", "kangaroo", "koala", "komodo dragon", "leopard", "lion", "lizard", "manatee", "meerkat", "monkey", "moose", "mouse", "newt", "octopus", "orangutan", "otter", "owl", "panda", "parrot", "peacock", "penguin", "pigeon", "polar bear", "poodle", "possum", "rabbit", "raccoon", "rat", "rhino", "robin", "salmon", "sea lion", "seahorse", "seal", "seagull", "shark", "sheep", "skunk", "sloth", "snake", "sparrow", "spider monkey", "squirrel", "stingray", "swan", "terrier", "tiger", "toad", "tortoise", "tuna", "turkey", "turtle", "vulture", "whale", "wolf", "wombat", "woodpecker", "zebra"],
-    "fruit": ["apple", "apricot", "avocado", "banana", "beetroot", "blackberry", "blueberry", "bok choy", "boysenberry", "broccoli", "broccolini", "brussel sprouts", "butternut pumpkin", "cabbage", "canteloupe", "capsicum", "carrot", "cauliflower", "celery", "cherry", "chilli", "corn", "cranberry", "cucumber", "currants", "date", "dates", "dragon fruit", "eggplant", "fennel", "fig", "garlic", "ginger", "gooseberry", "grape", "grapefruit", "green beans", "guava", "honeydew melon", "iceberg lettuce", "jack fruit", "kale", "kiwi", "kiwifruit", "kumquat", "leaf", "leek", "lemon", "lime", "logan berry", "loquat", "lychee", "mandarin", "mango", "mulberry", "mushroom", "nectarine", "olive", "onion", "orange", "papaya", "parsnip", "passionfruit", "peach", "pear", "peas", "pineapple", "plantain", "plum", "pomegranate", "potato", "prickly pear", "pumpkin", "quince", "radish", "raspberry", "rhubarb", "rock melon", "rockmelon", "rocket lettuce", "shallot", "silverbeet", "snow pea", "spinach", "spring onion", "squash", "star fruit", "strawberry", "string beans", "swede", "sweet corn", "sweet potato", "tamarillo", "tangelo", "tangarine", "tomato", "turnip", "water melon", "watercress", "watermelon", "zucchini"],
+    "fruit": ["apple", "apricot", "avocado", "banana", "beetroot", "blackberry", "blueberry", "bok choy", "boysenberry", "broccoli", "broccolini", "brussel sprouts", "butternut pumpkin", "cabbage", "canteloupe", "capsicum", "carrot", "cauliflower", "celery", "cherry", "chilli", "corn", "cranberry", "cucumber", "currants", "date", "dates", "dragon fruit", "eggplant", "fennel", "fig", "data", "garlic", "ginger", "gooseberry", "grape", "grapefruit", "green beans", "guava", "honeydew melon", "iceberg lettuce", "jack fruit", "kale", "kiwi", "kiwifruit", "kumquat", "leaf", "leek", "lemon", "lime", "logan berry", "loquat", "lychee", "mandarin", "mango", "mulberry", "mushroom", "nectarine", "olive", "onion", "orange", "papaya", "parsnip", "passionfruit", "peach", "pear", "peas", "pineapple", "plantain", "plum", "pomegranate", "potato", "prickly pear", "pumpkin", "quince", "radish", "raspberry", "rhubarb", "rock melon", "rockmelon", "rocket lettuce", "shallot", "silverbeet", "snow pea", "spinach", "spring onion", "squash", "star fruit", "strawberry", "string beans", "swede", "sweet corn", "sweet potato", "tamarillo", "tangelo", "tangarine", "tomato", "turnip", "water melon", "watercress", "watermelon", "zucchini"],
     "tool": ["anvil", "axe", "bolt", "brush", "chain", "chisel", "clamp", "crowbar", "drill", "file", "hammer", "hoe", "ladder", "level", "mallet", "nail", "pliers", "rake", "ruler", "saw", "scissors", "screw", "screwdriver", "shovel", "spanner", "tape", "torch", "trowel", "vice", "wrench"],
     "vegetable": ["carrot", "broccoli", "cauliflower", "spinach", "lettuce", "cabbage", "kale", "celery", "asparagus", "cucumber", "zucchini", "eggplant", "pumpkin", "squash", "radish", "turnip", "beet", "potato", "onion", "garlic", "leek", "pepper", "tomato", "corn", "pea", "bean", "mushroom"],
     "vehicle": ["ambulance", "airplane", "bicycle", "boat", "bus", "canoe", "car", "ferry", "glider", "helicopter", "jeep", "jet", "limousine", "motorcycle", "rocket", "raft", "scooter", "ship", "spaceship", "subway", "submarine", "sled", "taxi", "tractor", "train", "tram", "truck", "van", "wagon", "yacht"],
-    "clothing": ["ankle boots", "ballet flats", "baseball cap", "bathroom robe", "beanie", "belt", "blazer", "blazer dress", "blouse", "bodysuit", "bomber jacket", "boots", "boxer briefs", "bucket hat", "button-down shirt", "camisoles", "cap", "cardigan", "cardigan jacket", "cargo pants", "cargo shorts", "chelsea boots", "clothing", "coat", "combat boots", "cowboy boots", "crewneck sweater", "crop top", "crossbody bag", "culottes", "cycling shorts", "denim jacket", "denim skirt", "denim vest", "dress", "faux fur jacket", "flannel shirt", "g string", "gloves", "graphic tee", "hat", "henley shirt", "hoodie", "jacket", "jeans", "jogger shorts", "joggers", "knit skirt", "leather belt", "leather jacket", "leather jackets", "leather pants", "leggings", "linen pants", "linen shorts", "linen shirt", "loafers", "long-sleeve tee", "lounge pants", "mary-jane shoes", "midi dress", "midi skirt", "mom jeans", "oversized blazer", "oversized t-shirt", "pants", "parka", "pea coat", "peplums", "pleated skirt", "polo shirt", "puffer jacket", "pyjamas", "raincoat", "ribbed tank top", "running shoes", "sandals", "scarf", "shirt", "shoes", "shorts", "shoulder bag", "silk blouse", "skinny jeans", "skirt", "skorts", "sleep shirt", "slingback heels", "slippers", "socks", "sports bra", "suit", "sunglasses", "sweater", "sweater vests", "sweatpants", "sweat set", "t shirt", "tank top", "thermal set", "tie", "tote bag", "trench coat", "trousers", "turtleneck top", "turtleneck knit", "v-neck t-shirt", "vest", "wide-leg trousers", "windbreaker", "wool coat", "wrap top", "yoga pants"],
-    "furniture": ["armchair", "bed", "bench", "bookcase", "buffet", "cabinet", "chair", "chest", "closet", "couch", "cradle", "desk", "dresser", "lamp", "mattress", "mirror", "nightstand", "rug", "shelf", "sofa", "stand", "stool", "table", "wardrobe"],
-    "kitchenware": ["blender", "bowl", "cup", "flask", "fork", "glass", "grater", "griddle", "jug", "kettle", "knife", "ladle", "mug", "opener", "pan", "peeler", "plate", "pot", "saucer", "sieve", "spoon", "toaster", "tongs", "tray", "whisk"],
-    "stationery": ["binder", "chalk", "clip", "crayon", "cutter", "diary", "folder", "glue", "ink", "journal", "marker", "notebook", "pad", "pen", "pencil", "ruler", "scissors", "sharpener", "slate", "stamp", "stapler", "tape"],
-    "toy": ["ball", "bear", "block", "brick", "card", "dice", "doll", "glider", "hoop", "kite", "marble", "mask", "puppet", "puzzle", "rattle", "robot", "skates", "top", "train", "trike", "truck", "wand", "yo-yo"],
-    "appliance": ["appliance", "blender", "clock", "dryer", "fan", "fridge", "fryer", "grill", "heater", "iron", "kettle", "lamp", "mixer", "oven", "radar", "radio", "scale", "stove", "toaster", "vacuum", "washer"],
-    "plants": ["bamboo", "banksia", "birch", "bush", "cactus", "cedar", "elm", "eucalyptus", "fern", "flower", "gumtree", "grass", "ivy", "leaf", "lily", "lotus", "maple", "moss", "oak", "orchid", "palm", "petal", "pine", "poppy", "redwood", "root", "rose", "seed", "stem", "sunflower", "tree", "tulip", "vine", "violet", "weed", "willow"],
-    "weather": ["breeze", "cloud", "dew", "fog", "frost", "gale", "hail", "lightning", "mist", "rain", "sleet", "snow", "storm", "thunder", "wind"],
-    "metal": ["brass", "bronze", "chrome", "copper", "gold", "iron", "lead", "mercury", "nickel", "steel", "silver", "tin", "zinc"],
-    "instrument": ["accordion", "acoustic guitar", "alto flute", "alto saxophone", "alphorn", "autoharp", "bagpipes", "balalaika", "banjo", "baritone saxophone", "bass clarinet", "bass drum", "bass guitar", "bass", "bells", "bongo drum", "bongos", "bugle", "calliope", "castanets", "celesta", "cello", "chimes", "clarinet", "clavichord", "conch shell", "congas", "cornet", "cymbal", "didgeridoo", "double bass", "drum", "drums", "electric organ", "electric guitar", "english horn", "erhu", "euphonium", "flute", "flugelhorn", "fortepiano", "french horn", "glockenspiel", "goblet drum", "gong", "grand piano", "hammond organ", "harmonica", "harmonium", "harp", "harpsichord", "horn", "instrument", "kalimba", "kazoo", "keyboard", "lute", "mandolin", "maracas", "marimba", "melodica", "nose flute", "oboe", "ocarina", "organ", "oud", "pan flute", "piccolo", "pipe organ", "rainstick", "recorder", "rhythm guitar", "saxophone", "sitar", "snare drum", "soprano saxophone", "spoons", "sousaphone", "steelpan drum", "synthesizer", "tabla", "tambourine", "tam tam", "tenor saxophone", "timpani", "tin whistle", "tom toms", "trombone", "trumpet", "tuba", "tubular bells", "triangle", "ukulele", "vibraphone", "viola", "violin", "vocal percussion", "vuvuzela", "whistle", "wood block", "xylophone"],
-    "weapon": ["arrow", "blade", "bomb", "bow", "cannon", "club", "dagger", "dart", "knife", "lance", "laser", "mace", "mine", "missile", "pistol", "rifle", "shield", "spear", "sword", "weapon"],
-    "sport": ["ball", "bat", "board", "boot", "club", "glove", "helmet", "hoop", "mat", "medal", "net", "pads", "puck", "racket", "ring", "skate", "ski", "stick", "trophy", "whistle"],
-    "planet": ["comet", "earth", "jupiter", "mars", "mercury", "meteor", "moon", "neptune", "planet", "pluto", "probe", "rocket", "saturn", "star", "sun", "uranus", "venus"],
-    "shape": ["arc", "block", "circle", "cone", "cross", "cube", "diamond", "dot", "heart", "line", "loop", "oval", "pyramid", "ring", "sphere", "spiral", "square", "star", "triangle", "wavy-lines"],
-    "body": ["arm", "back", "body", "bone", "bottom", "chest", "ear", "elbow", "eye", "face", "finger", "foot", "hand", "hair", "head", "knee", "leg", "mouth", "neck", "nose", "shoulders", "skin", "toe", "thumb", "tooth", "wrist"],
-    
-    // Converted Custom Placeholders
+    "clothing": ["ankle boots", "ballet flats", "baseball cap", "bathroom robe", "beanie", "belt", "blazer", "blazer dress", "blouse", "bodysuit", "bomber jacket", "boots", "boxer briefs", "bucket hat", "button-down shirt", "camisoles", "cap", "cardigan", "cardigan jacket", "cargo pants", "cargo shorts", "chelsea boots", "clothing", "coat", "combat boots", "cowboy boots", "crewneck sweater", "crop top", "crossbody bag", "culottes", "cycling shorts", "denim jacket", "denim skirt", "denim vest", "dress", "faux fur jacket", "flannel shirt", "g string", "gloves", "graphic tee", "hat", "henley shirt", "hoodie", "jacket", "jeans", "jogger shorts", "joggers", "knit skirt", "leather belt", "leather jacket", "leather jackets", "leather pants", "leggings", "linen pants", "linen shorts", "linen shirt", "loafers", "long-sleeve tee", "lounge pants", "mary jane shoes", "midi dress", "midi skirt", "mom jeans", "oversized blazer", "oversized t-shirt", "pants", "parka", "pea coat", "peplums", "pleated skirt", "polo shirt", "puffer jacket", "pyjamas", "raincoat", "ribbed tank top", "running shoes", "sandals", "scarf", "shirt", "shoes", "shorts", "shoulder bag", "silk blouse", "skinny jeans", "skirt", "skorts", "sleep shirt", "slingback heels", "slippers", "socks", "sports bra", "suit", "sunglasses", "sweater", "sweater vests", "sweatpants", "sweat set", "t shirt", "tank top", "thermal set", "tie", "tote bag", "trench coat", "trousers", "turtleneck top", "turtleneck knit", "v-neck t-shirt", "vest", "wide-leg trousers", "windbreaker", "wool coat", "wrap top", "yoga pants"],
+    "furniture": ["apple", "chair", "table", "desk", "bed", "sofa", "couch", "armchair", "stool", "bench", "dresser", "wardrobe", "closet", "cabinet", "bookcase", "shelf", "nightstand", "mattress", "rug", "lamp", "mirror", "chest", "stand", "buffet", "cradle"],
+    "kitchenware": ["spoon", "fork", "knife", "plate", "bowl", "mug", "glass", "cup", "pot", "pan", "kettle", "toaster", "blender", "whisk", "grater", "peeler", "tongs", "ladle", "tray", "sieve", "jug", "flask", "saucer", "griddle", "opener"],
+    "stationery": ["pen", "pencil", "marker", "eraser", "ruler", "stapler", "binder", "folder", "crayon", "notebook", "tape", "glue", "clip", "stamp", "chalk", "slate", "ink", "journal", "diary", "pad", "scissors", "cutter", "sharpener"],
+    "toy": ["doll", "ball", "puzzle", "block", "yo-yo", "marble", "robot", "kite", "balloon", "train", "car", "truck", "bear", "brick", "dice", "card", "top", "hoop", "rattle", "mask", "wand", "glider", "trike", "skates", "puppet"],
+    "appliance": ["fridge", "oven", "stove", "washer", "dryer", "iron", "vacuum", "fan", "heater", "clock", "toaster", "kettle", "blender", "mixer", "radio", "lamp", "radar", "scale", "grill", "fryer"],
+    "plants": ["oak", "tree", "tulip", "daisy", "lily", "orchid", "sunflower", "lotus", "violet", "poppy", "flower", "rose", "grass", "bush", "pine", "maple", "birch", "palm", "willow", "cedar", "ivy", "gumtree", "eucalyptus", "banksia", "bamboo", "redwood", "elm", "fern", "moss", "cactus", "vine", "leaf", "seed", "root", "stem", "petal", "weed"],
+    "weather": ["rain", "snow", "wind", "mist", "storm", "cloud", "fog", "hail", "frost", "thunder", "lightning", "gale", "breeze", "dew", "sleet"],
+    "metal": ["gold", "silver", "copper", "iron", "bronze", "steel", "zinc", "lead", "tin", "brass", "nickel", "chrome", "mercury"],
+    "instrument": ["guitar", "piano", "violin", "keyboard", "flute", "drums", "trumpet", "saxophone", "cello", "clarinet", "bass", "harmonica", "ukulele", "accordion", "trombone", "mandolin", "harp", "didgeridoo", "recorder", "whistle", "bells", "bugle", "cymbal", "oboe", "banjo", "xylophone", "maracas", "horn", "gong", "tuba", "bongos", "sitar", "bagpipes", "organ"],
+    "weapon": ["sword", "shield", "spear", "bow", "arrow", "dagger", "pistol", "rifle", "cannon", "knife", "blade", "club", "mace", "lance", "bomb", "mine", "missile", "laser", "dart"],
+    "sport": ["ball", "bat", "glove", "racket", "club", "puck", "stick", "net", "ring", "hoop", "mat", "board", "skate", "ski", "boot", "helmet", "pads", "whistle", "trophy", "medal"],
+    "planet": ["mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto", "sun", "moon", "star", "comet", "meteor", "rocket", "probe"],
+    "shape": ["circle", "square", "sphere", "cube", "cone", "pyramid", "oval", "ring", "cross", "triangle", "star", "wavylines", "diamond", "heart", "block", "line", "arc", "dot", "spiral", "loop"],
+    "body": ["arm", "leg", "hand", "foot", "head", "face", "eye", "nose", "mouth", "ear", "elbow", "wrist", "neck", "shoulders", "bottom", "toe", "finger", "thumb", "back", "knee", "chest", "skin", "bone", "tooth", "hair"],
     "container": ["bag", "barrel", "basket", "bottle", "box", "bucket", "case", "chest", "container", "cup", "glass", "jar", "mug", "sack", "tupperware"],
     "device": ["airpods", "cable", "camera", "device", "headphones", "laptop", "mouse", "phone", "plug", "powerbank", "remote", "screen", "shokz", "speaker", "tablet", "tv", "wire"],
     "luggage": ["backpack", "bag", "briefcase", "luggage", "manbag", "pack", "parcel", "pouch", "purse", "sack", "suitcase", "trunk", "wallet"],
     "building": ["building", "barn", "cabin", "fort", "garage", "house", "hut", "shed", "shack", "tent", "tower", "treehouse"],
     "money": ["bill", "card", "cash", "cheque", "coin", "money", "note", "safe", "token", "vault", "wallet"]
 };
-function findCategoryData(word) {
+function getCategory(word) {
     word = word.toLowerCase().trim();
-    let matches = [];
     for (const [cat, words] of Object.entries(KNOWLEDGE_BASE)) {
-        if (words.includes(word) || words.some(w => w+'s'===word || word+'s'===w)) {
-            matches.push(cat);
-        }
+        if (words.includes(word) || words.some(w => w+'s'===word || word+'s'===w)) return cat;
     }
-    return {
-        primary: matches.length > 0 ? matches : null,
-        allMatches: matches
-    };
+    return null;
 }
 
 const notepad = document.getElementById('notePad');
+const sect = document.getElementById('resultsSection');
+const list = document.getElementById('wordList');
 
 notepad.addEventListener('input', function() {
     let rawText = notepad.innerText || notepad.textContent || "";
-    const logSplit = rawText.split("\n\nMatches:");
-    let clearInput = logSplit.trim();
-    let tokens = clearInput.toLowerCase().split(/\s+/);
+    let tokens = rawText.toLowerCase().trim().split(/\s+/);
     
     if (tokens.length >= 3) {
-        let catWord = tokens;
-        let l1 = tokens;
-        let l2 = tokens;
+        let catWord = tokens[tokens.length - 3];
+        let l1 = tokens[tokens.length - 2];
+        let l2 = tokens[tokens.length - 1];
         
-        let catData = findCategoryData(catWord);
-        let cat = catData.primary;
+        let cat = getCategory(catWord);
         
         if (cat && l1.length === 1 && l2.length === 1) {
             let filtered = KNOWLEDGE_BASE[cat].filter(w => {
@@ -207,36 +206,29 @@ notepad.addEventListener('input', function() {
                 return lw.startsWith(l1) && lw.charAt(1) === l2;
             });
             
-            let resultHTML = clearInput + "\n\nMatches:\n";
-            if (filtered.length === 0) {
-                resultHTML += "No matching item records.";
-            } else {
+            list.innerHTML = '';
+            if (filtered.length > 0) {
+                sect.style.display = 'block';
                 filtered.forEach(w => {
-                    resultHTML += `• ${w}\n`;
+                    let div = document.createElement('div');
+                    div.className = 'match-item';
+                    div.textContent = `• ${w}`;
+                    list.appendChild(div);
                 });
+            } else {
+                sect.style.display = 'block';
+                list.innerHTML = '<div class="match-item" style="color:#8e8e93; font-style:italic;">No records found.</div>';
             }
-            
-            let selection = window.getSelection();
-            let range = selection.getRangeAt(0);
-            let offset = range.startOffset;
-            
-            notepad.innerText = resultHTML;
-            
-            let newRange = document.createRange();
-            let textNodes = notepad.childNodes;
-            if (textNodes.length > 0) {
-                let targetOffset = Math.min(offset, clearInput.length);
-                newRange.setStart(textNodes, targetOffset);
-                newRange.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(newRange);
-            }
+            return;
         }
     }
+    sect.style.display = 'none';
 });
 
 document.getElementById('clearTrigger').addEventListener('click', function() {
     notepad.innerText = '';
+    list.innerHTML = '';
+    sect.style.display = 'none';
     notepad.focus();
 });
 </script>

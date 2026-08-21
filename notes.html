@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Notes</title>
+    <style>
+        :root {
+            --apple-yellow: #ffcc00;
+            --note-bg: #ffffff;
+            --text-dark: #000000;
+            --gray-text: #8e8e93;
+            --bar-bg: #f2f2f7;
+            --border-light: #d1d1d6;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--note-bg);
+            color: var(--text-dark);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            height: 100%;
+            overflow: hidden;
+        }
+        .app-layout {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+        }
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            background-color: var(--note-bg);
+        }
+        .back-btn {
+            color: var(--apple-yellow);
+            font-size: 1.4rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        .right-icons {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .apple-icon {
+            width: 22px;
+            height: 22px;
+            color: var(--apple-yellow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .apple-icon.done {
+            background-color: var(--apple-yellow);
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        .note-canvas {
+            flex: 1;
+            padding: 16px 20px;
+            font-size: 1.15rem;
+            line-height: 1.4;
+            outline: none;
+            overflow-y: auto;
+            position: relative;
+            white-space: pre-wrap;
+            caret-color: var(--apple-yellow);
+        }
+        .note-canvas:empty::before {
+            content: '';
+            display: inline-block;
+        }
+        .stealth-feed {
+            margin-top: 40px;
+            border-top: 1px solid transparent;
+            padding-top: 10px;
+            color: var(--gray-text);
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+        }
+        .match-badge {
+            display: inline-block;
+            background-color: #f2f2f7;
+            color: #555555;
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            text-transform: capitalize;
+        }
+        .apple-toolbar {
+            background-color: var(--bar-bg);
+            border-top: 1px solid var(--border-light);
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        .toolbar-btn {
+            font-size: 1.25rem;
+            color: #444444;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    <div class="header-actions">
+        <div class="back-btn">&#10094;</div>
+        <div class="right-icons">
+            <div class="apple-icon">&#8679;</div>
+            <div class="apple-icon">&#8943;</div>
+            <div class="apple-icon done">&#10003;</div>
+        </div>
+    </div>
+
+    <div class="note-canvas" id="notePad" contenteditable="true" autofocus></div>
+
+    <div class="apple-toolbar">
+        <div class="toolbar-btn" style="font-family: serif; font-weight: bold;">Aa</div>
+        <div class="toolbar-btn">&#9745;</div>
+        <div class="toolbar-btn">&#8862;</div>
+        <div class="toolbar-btn">&#128206;</div>
+        <div class="toolbar-btn">&#9998;</div>
+        <div class="toolbar-btn" id="clearTrigger" style="font-size: 1rem; color: var(--gray-text);">Reset</div>
+    </div>
+</div>
+<script>
+const KNOWLEDGE_BASE = {
+    "animal": ["elephant", "lion", "chimp", "chimpanzee", "tiger", "bear", "monkey", "giraffe", "zebra", "baboon", "kangaroo", "possum", "hippo", "rhino", "leopard", "cheetah", "panda", "koala", "gorilla", "camel", "donkey", "horse", "sheep", "goat", "wolf", "fox", "rabbit", "deer", "moose", "squirrel", "hamster", "mouse", "rat", "bat", "whale", "dolphin", "shark", "octopus", "turtle", "pigeon", "lizard", "alligator", "crocodile", "frog", "eagle", "hawk", "owl", "parrot", "penguin", "goldfish", "flamingo", "fish", "peacock", "seal", "wombat", "swan", "duck", "seagull", "goose", "chicken", "turkey", "dog", "orangutan", "stingray", "toad", "cat"],
+    "fruit": ["banana", "apple", "orange", "grape", "strawberry", "blueberry", "raspberry", "watermelon", "peach", "pear", "plum", "cherry", "apricot", "mango", "papaya", "pineapple", "coconut", "lemon", "lime", "grapefruit", "kiwi", "fig", "date", "pomegranate", "avocado"],
+    "tool": ["hammer", "screwdriver", "pliers", "wrench", "saw", "drill", "chisel", "mallet", "axe", "level", "trowel", "shovel", "rake", "hoe", "file", "clamp", "vice", "anvil", "crowbar", "ladder", "tape", "spanner", "scissors"],
+    "vegetable": ["carrot", "broccoli", "cauliflower", "spinach", "lettuce", "cabbage", "kale", "celery", "asparagus", "cucumber", "zucchini", "eggplant", "pumpkin", "squash", "radish", "turnip", "beet", "potato", "onion", "garlic", "leek", "pepper", "tomato", "corn", "pea", "bean", "mushroom"],
+    "vehicle": ["car", "truck", "bus", "van", "motorcycle", "bicycle", "scooter", "train", "tram", "subway", "airplane", "helicopter", "jet", "rocket", "spaceship", "boat", "ship", "yacht", "submarine", "ferry", "tractor", "ambulance", "limousine"],
+    "clothing": ["shirt", "pants", "trousers", "jeans", "shorts", "skirt", "dress", "suit", "jacket", "coat", "sweater", "hoodie", "blouse", "vest", "socks", "shoes", "boots", "sneakers", "sandals", "slippers", "hat", "cap", "beanie", "scarf", "gloves", "tie", "belt"],
+    "furniture": ["chair", "table", "desk", "bed", "sofa", "couch", "armchair", "stool", "bench", "dresser", "wardrobe", "closet", "cabinet", "bookcase", "shelf", "nightstand", "mattress"],
+    "kitchenware": ["spoon", "fork", "knife", "plate", "bowl", "mug", "glass", "cup", "pot", "pan", "kettle", "toaster", "blender"],
+    "stationery": ["pen", "pencil", "marker", "eraser", "ruler", "stapler", "binder", "folder", "crayon", "notebook"],
+    "toy": ["doll", "ball", "puzzle", "block", "yo-yo", "marble", "robot", "kite", "balloon"],
+    "appliance": ["fridge", "oven", "stove", "washer", "dryer", "iron", "vacuum", "fan", "heater", "clock"],
+    "plants": ["oak", "tree", "tulip", "daisy", "lily", "orchid", "sunflower", "lotus", "violet", "poppy", "flower", "rose", "grass", "bush", "pine", "maple", "birch", "palm", "willow", "cedar", "ivy", "gumtree", "eucalyptus", "banksia", "bamboo", "redwood", "elm"],
+    "weather": ["rain", "snow", "wind", "mist", "storm", "cloud", "fog", "hail", "frost", "thunder", "lightning"],
+    "metal": ["gold", "silver", "copper", "iron", "bronze", "steel", "zinc", "lead", "tin"],
+    "instrument": ["guitar", "piano", "violin", "keyboard", "flute", "drums", "trumpet", "saxophone", "cello", "clarinet", "bass", "harmonica", "ukulele", "accordion", "trombone", "mandolin", "harp", "didgeridoo", "recorder", "whistle", "bells", "bugle", "cymbal", "oboe", "banjo", "xylophone", "maracas", "horn", "gong", "tuba", "bongos", "sitar", "bagpipes", "organ"],
+    "weapon": ["sword", "shield", "spear", "bow", "arrow", "dagger", "pistol", "rifle", "cannon", "knife"],
+    "sport": ["soccer", "tennis", "golf", "rugby", "hockey", "cricket", "squash", "skiing"],
+    "planet": ["mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto", "sun"],
+    "shape": ["circle", "square", "sphere", "cube", "cone", "pyramid", "oval", "ring", "cross", "triangle", "star", "wavylines"],
+    "body": ["arm", "leg", "hand", "foot", "head", "face", "eye", "nose", "mouth", "ear", "elbow", "wrist", "neck", "shoulders", "bottom", "toe", "finger", "thumb", "back"]
+};
+
+function getCategory(word) {
+    word = word.toLowerCase().trim();
+    for (const [cat, words] of Object.entries(KNOWLEDGE_BASE)) {
+        if (words.includes(word) || words.some(w => w+'s'===word || word+'s'===w)) return cat;
+    }
+    return null;
+}
+
+const notepad = document.getElementById('notePad');
+
+notepad.addEventListener('input', function() {
+    // Get text and strip hidden HTML element tags out
+    let rawText = notepad.innerText || notepad.textContent || "";
+    
+    // Remove old search logs if they exist on the visual sheet
+    const logSplit = rawText.split("\n\nMatches:");
+    let clearInput = logSplit[0].trim();
+    
+    // Split input line by spaces
+    let tokens = clearInput.toLowerCase().split(/\s+/);
+    
+    if (tokens.length >= 3) {
+        let catWord = tokens[0];
+        let l1 = tokens[1];
+        let l2 = tokens[2];
+        
+        let cat = getCategory(catWord);
+        if (cat && l1.length === 1 && l2.length === 1) {
+            let filtered = KNOWLEDGE_BASE[cat].filter(w => {
+                let lw = w.toLowerCase();
+                return lw.startsWith(l1) && lw.charAt(1) === l2;
+            });
+            
+            // Build innocent text block results
+            let resultHTML = clearInput + "\n\nMatches:\n";
+            if (filtered.length === 0) {
+                resultHTML += "No matching item records.";
+            } else {
+                filtered.forEach(w => {
+                    resultHTML += `• ${w}\n`;
+                });
+            }
+            
+            // Save cursor state positions seamlessly before injecting results text
+            let selection = window.getSelection();
+            let range = selection.getRangeAt(0);
+            let offset = range.startOffset;
+            
+            notepad.innerText = resultHTML;
+            
+            // Reset typing cursor back to its active tracking point
+            let newRange = document.createRange();
+            let textNode = notepad.childNodes[0];
+            if (textNode) {
+                let targetOffset = Math.min(offset, clearInput.length);
+                newRange.setStart(textNode, targetOffset);
+                newRange.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(newRange);
+            }
+        }
+    }
+});
+
+// Secretly tapping the gray marker icon resets the entire note pad instantly
+document.getElementById('clearTrigger').addEventListener('click', function() {
+    notepad.innerText = '';
+    notepad.focus();
+});
+</script>
+</body>
+</html>
